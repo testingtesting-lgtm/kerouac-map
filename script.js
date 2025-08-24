@@ -29,6 +29,27 @@ const places = {
   ]
 };
 
+const journeyButtons = [
+    { id: 'journey-1-btn', geojson: 'journey_1.geojson', color: '#B8860B' },
+    { id: 'journey-2-btn', geojson: 'journey_2.geojson', color: '#B36743' },
+    { id: 'journey-3-btn', geojson: 'journey_3.geojson', color: '#C9B884' }
+];
+
+function animateRoutePulse(timestamp) {
+    const period = 2000; // ms for a full pulse cycle
+    const minWidth = 5;  // Base width of the parchment layer
+    const maxWidth = 7;  // Max width of the parchment layer
+    const pulseValue = (Math.sin((timestamp / period) * 2 * Math.PI) + 1) / 2; // 0-1
+    const currentWidth = minWidth + (maxWidth - minWidth) * pulseValue;
+
+    journeyButtons.forEach(button => {
+        if (map.getLayer(`route-parchment-${button.geojson}`)) {
+            map.setPaintProperty(`route-parchment-${button.geojson}`, 'line-width', currentWidth);
+        }
+    });
+    requestAnimationFrame(animateRoutePulse);
+}
+
 async function drawRoute(geojsonFile, routeColor, opacities) {
     try {
         const response = await fetch(geojsonFile);
@@ -118,8 +139,11 @@ async function initializeMap() {
         drawRoute('journey_2.geojson', '#B36743', { shadow: 0.22, stroke: 0.35, fill: 0.5 }),  
         drawRoute('journey_3.geojson', '#C9B884', { shadow: 0.22, stroke: 0.35, fill: 0.4 })
     ]);
+    // Start the route pulse animation
+    requestAnimationFrame(animateRoutePulse);
 
     let sequenceTimeouts = [];
+    let animationFrameId;
 
     // Function to add pulse class with a delay
     function pulseMarkersInOrder(routeNumber) {
@@ -155,25 +179,96 @@ async function initializeMap() {
 
         // After the entire sequence is over, remove the general 'highlighted'
         // class to revert markers to their original size.
-        const totalDuration = 250 + ((markers.length - 1) * delayBetweenPulses) + pulseDuration;
+        const totalDuration = calculateTotalDuration(routeNumber);
         const buttonInfo = journeyButtons.find(b => parseInt(b.id.split('-')[1]) === routeNumber);
         const finalCleanup = setTimeout(() => {
             markers.forEach(m => m.classList.remove('highlighted'));
+
+            // Remove the animation layer
+            const animationLayerId = 'route-animation-layer';
+            if (map.getLayer(animationLayerId)) {
+                map.removeLayer(animationLayerId);
+            }
+
             if (buttonInfo) {
-                map.setPaintProperty(`route-fill-${buttonInfo.geojson}`, 'line-opacity', 0.55);
-                map.setPaintProperty(`route-fill-${buttonInfo.geojson}`, 'line-width', 1.5);
+                // Reset the base route layer style
+                const fillLayerId = `route-fill-${buttonInfo.geojson}`;
+                if (map.getLayer(fillLayerId)) {
+                    map.setPaintProperty(fillLayerId, 'line-opacity', 0.55);
+                    map.setPaintProperty(fillLayerId, 'line-width', 1.5);
+                }
+                // Remove arrows
                 const layerId = `route-arrows-${buttonInfo.geojson}`;
                 if (map.getLayer(layerId)) { map.removeLayer(layerId); }
             }
         }, totalDuration);
         sequenceTimeouts.push(finalCleanup);
     }
-    //5. Route Highlighting and Directionality
-    const journeyButtons = [
-        { id: 'journey-1-btn', geojson: 'journey_1.geojson', color: '#B8860B' },
-        { id: 'journey-2-btn', geojson: 'journey_2.geojson', color: '#B36743' },
-        { id: 'journey-3-btn', geojson: 'journey_3.geojson', color: '#C9B884' }
-    ];
+
+    function calculateDrawingDuration(routeNumber) {
+        const markers = document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`);
+        if (markers.length === 0) return 0;
+        const delayBetweenPulses = 1000;
+        // Duration should cover up to the start of the last marker's pulse
+        return 250 + (markers.length - 1) * delayBetweenPulses;
+    }
+
+    function calculateTotalDuration(routeNumber) {
+        const markers = document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`);
+        if (markers.length === 0) return 0;
+        const drawingDuration = calculateDrawingDuration(routeNumber);
+        const pulseDuration = 1000;
+        // Total duration covers the end of the last marker's pulse
+        return drawingDuration + pulseDuration;
+    }
+
+    function animateRouteDrawing(sourceId, duration) {
+        const animationLayerId = 'route-animation-layer';
+
+        // Find the ID of the first symbol layer in the map style. This is
+        // to ensure that our animation line is drawn underneath labels.
+        let firstSymbolId;
+        for (const layer of map.getStyle().layers) {
+            if (layer.type === 'symbol') {
+                firstSymbolId = layer.id;
+                break;
+            }
+        }
+
+        // Add the new animation layer
+        map.addLayer( {
+            'id': animationLayerId,
+            'type': 'line',
+            'source': sourceId, // Use the existing source of the route
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#E4B456', // A bright, distinct animation color
+                'line-width': 4,
+                'line-opacity': 1,
+                'line-trim-offset': [0, 0] // Start invisible
+            }
+        }, firstSymbolId);
+
+        let start;
+        function frame(timestamp) {
+            if (start === undefined) start = timestamp;
+            const elapsed = timestamp - start;
+            const progress = Math.min(elapsed / duration, 1);
+            if (isNaN(progress)) return; // a failsafe
+
+            if (map.getLayer(animationLayerId)) {
+                map.setPaintProperty(animationLayerId, 'line-trim-offset', [0, progress]);
+            }
+
+            if (progress < 1) animationFrameId = requestAnimationFrame(frame);
+        }
+        // Clear any existing frame to avoid conflicts
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(frame);
+    }
 
     function removeAllArrowLayers() {
         journeyButtons.forEach(button => {
@@ -188,31 +283,50 @@ async function initializeMap() {
         const element = document.getElementById(button.id);
         if (element) {
             element.addEventListener('click', () => {
-                // Reset all routes to default
-                // Remove 'highlighted' class from all markers
-                removeAllArrowLayers();
+                // 1. Clear previous animations and timeouts
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                sequenceTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+                sequenceTimeouts = [];
+                const routeNumber = parseInt(button.id.split('-')[1]);
 
-                document.querySelectorAll('.typewriter-marker').forEach(marker => {
-                    marker.classList.remove('highlighted');
+                // 2. Reset all routes and markers to their default state
+                removeAllArrowLayers();
+                const animationLayerId = 'route-animation-layer';
+                if (map.getLayer(animationLayerId)) {
+                    map.removeLayer(animationLayerId);
+                }
+
+                journeyButtons.forEach(b => {
+                    const fillLayerId = `route-fill-${b.geojson}`;
+                    if (map.getLayer(fillLayerId)) {
+                        map.setPaintProperty(fillLayerId, 'line-opacity', 0.55);
+                        map.setPaintProperty(fillLayerId, 'line-width', 1.5);
+                    }
                 });
 
-                // Add 'highlighted' class to markers on the selected route
-                const routeNumber = parseInt(button.id.split('-')[1]);
+                document.querySelectorAll('.typewriter-marker').forEach(marker => {
+                    marker.classList.remove('highlighted', 'sequence-highlight', 'pulse');
+                });
+
+                // 3. Highlight the selected route and its markers
+                const selectedFillLayer = `route-fill-${button.geojson}`;
+                if (map.getLayer(selectedFillLayer)) {
+                    map.setPaintProperty(selectedFillLayer, 'line-opacity', 0.9);
+                    map.setPaintProperty(selectedFillLayer, 'line-width', 2.5);
+                }
                 document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`).forEach(marker => {
                     marker.classList.add('highlighted');
                 });
 
-                journeyButtons.forEach(resetButton => {
-                    map.setPaintProperty(`route-fill-${resetButton.geojson}`, 'line-opacity', 0.55);
-                    map.setPaintProperty(`route-fill-${resetButton.geojson}`, 'line-width', 1.5);       
-              });
-
-                map.setPaintProperty(`route-fill-${button.geojson}`, 'line-opacity', 0.9);
-                 map.setPaintProperty(`route-fill-${button.geojson}`, 'line-width', 2.5);
-
-                // Add directionality (arrows) to the highlighted route  
+                // 4. Start the new animations
+                const drawingDuration = calculateDrawingDuration(routeNumber);
+                const sourceId = `route-source-${button.geojson}`;
+                animateRouteDrawing(sourceId, drawingDuration);
                 addRouteDirection(button.geojson, button.color);
-                pulseMarkersInOrder(parseInt(button.id.split('-')[1]));
+                pulseMarkersInOrder(routeNumber);
           });
         } else {
             console.error(`Element with id ${button.id} not found.`);
