@@ -1,0 +1,183 @@
+/* --- Page Styles --- */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #151F2E; /* Your Deep Garnet background */
+    font-family: 'Special Elite', cursive;
+}
+
+.content-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+h1 {
+    font-size: 3em;
+    font-weight: normal;
+    letter-spacing: 2px;
+    color: #E9DDCB; /* Soft Aged Vellum */
+}
+
+.subtitle {
+    font-size: 1.6em; /* Slightly smaller for better hierarchy */
+    opacity: 0.9;
+    margin-top: -20px;
+    margin-bottom: 40px;
+    color: #E4B456; /* Warm Amber Gold */
+}
+
+#map {
+    position: relative;
+    width: 100%;
+    height: 75vh;
+    border: 3px solid #E4B456;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* --- Marker Styles --- */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(93, 67, 44, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(93, 67, 44, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(93, 67, 44, 0); }
+}
+
+.typewriter-marker {
+  width: 8px;
+  height: 8px;
+  background-color: #F5EDE0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0px rgba(93, 67, 44, 0.6); 
+  cursor: pointer;
+  animation: pulse 2s infinite;
+}
+
+.journey-1 { border: 3px solid #B8860B; }
+.journey-2 { border: 3px solid #D18A6A; }
+.journey-3 { border: 3px solid #C9B884; }
+
+.typewriter-marker.highlighted {
+    background-color: #F5EDE0; /* Highlight color */
+    width: 12px; /* Slightly larger */
+    height: 12px;
+}
+
+.typewriter-marker.sequence-highlight {
+    background-color: #E4B456; /* Highlight color */
+    border: 3px solid #F5EDE0;
+    transition: all 0.1s ease-in-out;
+}
+
+.journey-1.typewriter-marker.sequence-highlight {
+    background-color: #B8860B; /* Journey 1 sequence highlight color */
+    border: 3px solid #F5EDE0; /* Corrected border color */
+}
+
+.journey-2.typewriter-marker.sequence-highlight {
+    background-color: #D18A6A; /* Journey 2 sequence highlight color */
+    border: 3px solid #F5EDE0; /* Corrected border color */
+}
+
+.journey-3.typewriter-marker.sequence-highlight {
+    background-color: #C9B884; /* Journey 3 sequence highlight color */
+    border: 3px solid #F5EDE0; /* Corrected border color */
+}
+
+/* --- Popup Styles --- */
+.kerouac-popup .mapboxgl-popup-content {
+  font-family: 'Special Elite', cursive;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #3B2A1A;
+  padding: 15px;
+  background: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAA8ADwDASIAAhEBAxEB/8QAGwAAAgIDAQAAAAAAAAAAAAAAAAcGCQEFAgT/xAAyEAABAwIDBQYGAwAAAAAAAAABAgMEBQYHERITITFBUWFxgaEIFCIyM3KRscFSYvAj/QAGAEBAQEBAQAAAAAAAAAAAAAAAAEEAwL/xAAgEQEAAgEEAgMAAAAAAAAAAAAAAQIDBBESITFRYQUT/9oADAMBAAIREAPwDYMMMMMMMMMMMMMMMMMMMMMNW8V+JFW7OqLRoMZEyqLwpx53PwbI5ZRy7xyz+XPTdGq+KeCVCtV6TXLbnjS3UJU6yrm0oDAy8tOA541ExXraN9z+nSYseO9fMTu0K+/6m7xQ47uJzJ4f4Z3c4155xWjF96Feq9dp8Gv0iPSJ0Z9TTyWScq/wC2/E5ZEYV2iWzX6tErs2GpybEOWnAtSQDzGVIOVf6nGo8C+H0+h1iVX67Tkw3AyWGGVqSpWVYzKyBIAGQfM8tNTHbFMfF/m0cb45z7/H6uU2n+n0GGGGGGGGGGGGGGGGGGGOG8aLNqNeixl0lCnFR1LzMJUAVg5ZpGeQPMZ+h13DDSYslsdq1naFqzVtWYneGpcK2LqF2UuPWKZLiPNIC0qWkYSoHPLmDwy1jV+0aBVK3Frs2GpybEGWnAtSQDzGVIOVf6nGu4YdMXD6zW0bnaO3PWO8zO8sMMMMMMMMMMMMMMMMMMMMM//Z') #F5EDE0;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+  max-width: 250px;
+  border-radius: 4% 96% 5% 95% / 95% 4% 96% 5%;
+}
+
+.kerouac-popup .mapboxgl-popup-tip {
+  display: none;
+}
+
+.kerouac-popup h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(93, 67, 44, 0.2);
+  padding-bottom: 5px;
+  color: #2F2115;
+}
+
+.kerouac-popup p {
+  margin: 0 0 10px 0;
+}
+
+.kerouac-popup small {
+  margin: 0;
+  font-size: 12px;
+  color: #75553e;
+}
+
+.mapboxgl-ctrl-attrib {
+  /* Forces the container to be transparent */
+  background-color: transparent !important; 
+  opacity: 0.5; /* Lowers the overall opacity */
+}
+
+/* This targets all the text links */
+.mapboxgl-ctrl-attrib a {
+  color: #E9DDCB; /* Changes the text to Aged Vellum */
+  font-family: 'Special Elite', cursive;
+  font-size: 10px;
+  text-decoration: none;
+}
+.mapboxgl-ctrl-attrib a:hover {
+  text-decoration: underline;
+}
+
+/* This targets the Mapbox logo specifically */
+.mapboxgl-ctrl-attrib .mapboxgl-ctrl-logo {
+  /* Remove the default background image */
+  background-image: none;
+  width: 18px;
+  height: 18px;
+  
+  /* Set our desired color */
+  background-color: #E9DDCB;
+
+  /* Use the Mapbox logo SVG as a mask (stencil) */
+  mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIj48cGF0aCBmaWxsPSJibGFjayIgZD0iTTEwIC4zQzQuNjUgLjMgLjMgNC42NS4zIDEwczQuMzUgOS43IDkuNyA5LjcgOS43LTQuMzUgOS43LTkuN1MxNS4zNS4zIDEwIC4zem0wIDEuNTZjNC41NCAwIDguMjQgMy43IDguMjQgOC4yNHMtMy43IDguMjQtOC4yNCA4LjI0LTguMjQtMy43LTguMjQtOC4yNCAzLjctOC4yNCA4LjI0LTguMjR6bS0xLjI0IDEuMTVjLTIuOTMgMS40My0zLjc4IDUtMi4zMyA3Ljk2czUgMy43OCA3Ljk2IDIuMzYgMy43OC01IDIuMzYtNy45My01LTMuNzgtNy45Ni0yLjM2ek04LjM0IDhjMS4yOC0uNTIgMS45My0uMTggMi40My4zOGwtMy4yMyAzLjIzYy0uNTgtLjQ4LS44OS0xLjE2LS4zOS0yLjQ1em0yLjY1IDIuNjhsMy4yMy0zLjIzYy41Ni41MS44OSAxLjE4LjM5IDIuNDVzLTEuMzEgMS45My0yLjQ1IDIuNDNsLTIuMzQtMy4yM3oiPjwvcGF0aD48L3N2Zz4=');
+  mask-size: contain;
+  -webkit-mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIj48cGF0aCBmaWxsPSJibGFjayIgZD0iTTEwIC4zQzQuNjUgLjMgLjMgNC42NS4zIDEwczQuMzUgOS43IDkuNyA5LjcgOS43LTQuMzUgOS43LTkuN1MxNS4zNS4zIDEwIC4zem0wIDEuNTZjNC41NCAwIDguMjQgMy43IDguMjQgOC4yNHMtMy43IDguMjQtOC4yNCA4LjI0LTguMjQtMy43LTguMjQtOC4yNCAzLjctOC4yNCA4LjI0LTguMjR6bS0xLjI0IDEuMTVjLTIuOTMgMS40My0zLjc4IDUtMi4zMyA3Ljk2czUgMy43OCA3Ljk2IDIuMzYgMy43OC01IDIuMzYtNy45My01LTMuNzgtNy45Ni0yLjM2ek04LjM0IDhjMS4yOC0uNTIgMS45My0uMTggMi40My4zOGwtMy4yMyAzLjIzYy0uNTgtLjQ4LS44OS0xLjE2LS4zOS0yLjQ1em0yLjY1IDIuNjhsMy4yMy0zLjIzYy41Ni41MS44OSAxLjE4LjM5IDIuNDVzLTEuMzEgMS45My0yLjQ1IDIuNDNsLTIuMzQtMy4yM3oiPjwvcGF0aD48L3N2Zz4=');
+  -webkit-mask-size: contain;
+}
+
+/* --- Cartographer's Legend --- */
+.cartographers-legend {
+    position: absolute;
+    top: 25px; /* put to the top left */
+    left: 25px; /* align to the left */
+    background-color: rgba(21, 31, 46, 0.85); /* Dark blue with some transparency */
+    border: 1px solid #E4B456;
+    border-radius: 3px;
+    padding: 10px 20px;
+    text-align: left;
+    z-index: 10;
+}
+
+.chapter-heading {
+    font-family: 'Special Elite', cursive;
+    color: #E9DDCB;
+    font-size: 1em;
+    cursor: pointer;
+    margin: 8px 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.chapter-heading:hover {
+    color: #E4B456;
+}
+
+.chapter-heading.highlighted {
+    color: #E4B456;
+}
