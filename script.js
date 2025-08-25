@@ -50,6 +50,36 @@ function animateRoutePulse(timestamp) {
     requestAnimationFrame(animateRoutePulse);
 }
 
+function createNoisePattern(width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const randomValue = Math.floor(Math.random() * 255); // Alpha
+        data[i] = 255;     // R (Gold)
+        data[i + 1] = 220; // G (Gold)
+        data[i + 2] = 100; // B (Gold)
+        data[i + 3] = randomValue; // Alpha
+    }
+    return imageData;
+}
+
+function animateGoldShimmer(timestamp) {
+    const period = 4000; // A 4-second pulse for a subtle shimmer
+    const pulseValue = (Math.sin((timestamp / period) * 2 * Math.PI) + 1) / 2; // Oscillates between 0 and 1
+    const currentOpacity = 0.0 + (0.18 - 0.0) * pulseValue; // Increased max opacity for more visibility
+    if (map.getLayer('gold-shimmer-layer')) {
+        map.setPaintProperty('gold-shimmer-layer', 'fill-opacity', currentOpacity);
+    }
+    if (map.getLayer('gold-shimmer-layer-landuse')) {
+        map.setPaintProperty('gold-shimmer-layer-landuse', 'fill-opacity', currentOpacity);
+    }
+    requestAnimationFrame(animateGoldShimmer);
+}
+
 async function drawRoute(geojsonFile, routeColor, opacities) {
     try {
         const response = await fetch(geojsonFile);
@@ -67,34 +97,82 @@ async function drawRoute(geojsonFile, routeColor, opacities) {
 
 async function initializeMap() {
     // 1. Hide the original 'water' layer from the style.
+    //    We will re-add our own water layer later.
     if (map.getLayer('water')) {
         map.setLayoutProperty('water', 'visibility', 'none');
     }
 
     // 2. Apply Textures
     try {
+        // Load water texture
         const waterTextureDensity = 3;
         const waterImage = await new Promise((resolve, reject) => map.loadImage('water4.jpg', (e, i) => e ? reject(e) : resolve(i)));
         if (!map.hasImage('water-background-pattern')) {
             map.addImage('water-background-pattern', waterImage, { pixelRatio: waterTextureDensity });
         }
-        map.setPaintProperty('background', 'background-pattern', 'water-background-pattern');
 
-        const goldImage = await new Promise((resolve, reject) => map.loadImage('gold11.jpg', (e, i) => e ? reject(e) : resolve(i)));
+        // Load gold texture
+        const baseGoldImage = await new Promise((resolve, reject) => map.loadImage('gold11.jpg', (e, i) => e ? reject(e) : resolve(i)));
         if (!map.hasImage('gilding-texture-pattern')) {
-            map.addImage('gilding-texture-pattern', goldImage);
+            map.addImage('gilding-texture-pattern', baseGoldImage, { pixelRatio: 3 });
         }
+
+        // Set the map's background to gold. This ensures all non-water areas are gold by default.
+        map.setPaintProperty('background', 'background-pattern', 'gilding-texture-pattern');
+
+        // Add a new layer for water, using the 'water' source layer
+        map.addLayer({
+            'id': 'custom-water-overlay',
+            'type': 'fill',
+            'source': 'composite',
+            'source-layer': 'water', // Use the actual water layer from the style
+            'paint': {
+                'fill-pattern': 'water-background-pattern',
+                'fill-opacity': 1 // Fully opaque water
+            }
+        }, 'road'); // Place it before roads, but after background
+
+        // Apply gold texture and shimmer to 'landcover' and 'landuse' layers
+        // These layers provide additional detail and shimmer on top of the base gold background.
         map.addLayer({
             'id': 'gilding-texture-overlay', 'type': 'fill', 'source': 'composite', 'source-layer': 'landcover',
-            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.11 }
+            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.15 }
         }, 'road');
+
+        map.addLayer({
+            'id': 'gilding-texture-overlay-landuse',
+            'type': 'fill', 'source': 'composite', 'source-layer': 'landuse',
+            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.15 }
+        }, 'road');
+        
+        // Animated shimmer layers (kept as is, as per user's request not to change shimmer)
+        const noisePattern = createNoisePattern(64, 64);
+        if (!map.hasImage('gold-shimmer-pattern')) {
+            map.addImage('gold-shimmer-pattern', noisePattern);
+        }
+
+        map.addLayer({
+            'id': 'gold-shimmer-layer',
+            'type': 'fill',
+            'source': 'composite',
+            'source-layer': 'landcover',
+            'paint': { 'fill-pattern': 'gold-shimmer-pattern', 'fill-opacity': 0 }
+        }, 'road');
+        map.addLayer({
+            'id': 'gold-shimmer-layer-landuse',
+            'type': 'fill',
+            'source': 'composite',
+            'source-layer': 'landuse',
+            'paint': { 'fill-pattern': 'gold-shimmer-pattern', 'fill-opacity': 0 }
+        }, 'road');
+
         console.log('Textures applied successfully.');
+
     } catch (error) {
         console.error('Failed to apply textures:', error);
     }
 
     // 3. Add HTML Markers and Popups
-    let legendClicked = false;    
     places.features.forEach(feature => {
 
       const el = document.createElement('div');
@@ -110,26 +188,19 @@ async function initializeMap() {
             .setPopup(popup) //bind popup to marker
             .addTo(map);
 
-        el.addEventListener('mouseenter', () => {
-            // highlight associated legend item
-            const journey = feature.properties.journey;
-            document.getElementById(`journey-${journey}-btn`).classList.add('highlighted');
-        });
+      el.addEventListener('mouseenter', () => {
+          // highlight associated legend item
+          const journey = feature.properties.journey;
+          document.getElementById(`journey-${journey}-btn`).classList.add('highlighted');
+          popup.addTo(map);
+      });
 
-        el.addEventListener('mouseleave', () => {
-             // highlight associated legend item
-            const journey = feature.properties.journey;
-            document.getElementById(`journey-${journey}-btn`).classList.remove('highlighted');
-        });
-
-
-        el.addEventListener('mouseenter', () => {popup.addTo(map);});
-        el.addEventListener('mouseleave', () => {
-            popup.remove();
-        });
-        if(legendClicked){
-            el.classList.remove('pulse');
-        }
+      el.addEventListener('mouseleave', () => {
+           // highlight associated legend item
+          const journey = feature.properties.journey;
+          document.getElementById(`journey-${journey}-btn`).classList.remove('highlighted');
+          popup.remove();
+      });
     });
     console.log('HTML markers added successfully.');
 
@@ -141,6 +212,7 @@ async function initializeMap() {
     ]);
     // Start the route pulse animation
     requestAnimationFrame(animateRoutePulse);
+    requestAnimationFrame(animateGoldShimmer);
 
     let sequenceTimeouts = [];
     let animationFrameId;
