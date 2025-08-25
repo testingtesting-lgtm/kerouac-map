@@ -191,3 +191,32 @@ h1 {
 .chapter-heading.highlighted {
     color: #E4B456;
 }
+
+/* --- Responsive Styles for Mobile --- */
+@media (max-width: 768px) {
+    .content-container {
+        margin: 20px 15px; /* Reduce top/bottom and side margins */
+    }
+
+    h1 {
+        font-size: 2.2em; /* Smaller heading */
+    }
+
+    .subtitle {
+        font-size: 1.2em; /* Smaller subtitle */
+        margin-bottom: 20px;
+    }
+
+    .cartographers-legend {
+        position: relative; /* Take it out of the map overlay flow */
+        top: auto;
+        left: auto;
+        width: auto; /* Let it be natural width */
+        margin: 0 auto 20px auto; /* Center it above the map */
+        z-index: 1; /* Reset z-index */
+    }
+
+    #map {
+        height: 60vh; /* Adjust map height for smaller screens */
+    }
+}
