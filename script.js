@@ -1,5 +1,8 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic2ltb25yb3Nlbjk5IiwiYSI6ImNtZWJwcnlqbTBvaHEya3F2MGFwZmpsMzUifQ.g0ROBXb5SfCVWqYsUHCX9g';
 
+const journeyPopups = {};
+let isAnimating = false;
+
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/simonrosen99/cmebpudu400f401sd3zs58kuu',
@@ -34,6 +37,13 @@ const journeyButtons = [
     { id: 'journey-2-btn', geojson: 'journey_2.geojson', color: '#B36743' },
     { id: 'journey-3-btn', geojson: 'journey_3.geojson', color: '#C9B884' }
 ];
+
+// --- Animation Timing Configuration ---
+const animationConfig = {
+    initialDelay: 250,
+    pulseDuration: 2500, // How long each popup is visible
+    delayBetweenPulses: 2500 // Time between each sequential popup
+};
 
 function animateRoutePulse(timestamp) {
     const period = 2000; // ms for a full pulse cycle
@@ -174,13 +184,19 @@ async function initializeMap() {
 
     // 3. Add HTML Markers and Popups
     places.features.forEach(feature => {
+        const journey = feature.properties.journey;
+        if (!journeyPopups[journey]) {
+            journeyPopups[journey] = [];
+        }
 
       const el = document.createElement('div');
-        let classes = `typewriter-marker journey-${feature.properties.journey}`;
+        let classes = `typewriter-marker journey-${journey}`;
         el.className = classes;
         el.classList.add('pulse');
         const popupContent = `<h3>${feature.properties.title}</h3><p>"${feature.properties.quote}"</p><small>${feature.properties.date}</small>`;
         const popup = new mapboxgl.Popup({ offset: 15, closeButton: false, className: 'kerouac-popup' }).setHTML(popupContent);       
+        journeyPopups[journey].push(popup);
+
         // This is the line with the corrected typo
         const marker = new mapboxgl.Marker(el)
 
@@ -189,15 +205,15 @@ async function initializeMap() {
             .addTo(map);
 
       el.addEventListener('mouseenter', () => {
+          if (isAnimating) return;
           // highlight associated legend item
-          const journey = feature.properties.journey;
           document.getElementById(`journey-${journey}-btn`).classList.add('highlighted');
           popup.addTo(map);
       });
 
       el.addEventListener('mouseleave', () => {
+          if (isAnimating) return;
            // highlight associated legend item
-          const journey = feature.properties.journey;
           document.getElementById(`journey-${journey}-btn`).classList.remove('highlighted');
           popup.remove();
       });
@@ -229,24 +245,33 @@ async function initializeMap() {
         });
 
         const markers = document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`);
-        let delay = 250;
-        const pulseDuration = 1000; // Duration each marker stays highlighted
-        const delayBetweenPulses = 1000;
+        const popups = journeyPopups[routeNumber] || [];
+        const journeyFeatures = places.features.filter(f => f.properties.journey === routeNumber);
+        let delay = animationConfig.initialDelay;
 
         markers.forEach((marker, index) => {
+            const popup = popups[index];
+            const feature = journeyFeatures[index];
+
             // Schedule adding the highlight class
             const timeout1 = setTimeout(() => {
                 marker.classList.add('sequence-highlight');
+                if (popup && feature) {
+                    popup.setLngLat(feature.geometry.coordinates).addTo(map);
+                }
             }, delay);
 
             // Schedule removing the highlight class
             const timeout2 = setTimeout(() => {
                 marker.classList.remove('sequence-highlight');
-            }, delay + pulseDuration);
+                if (popup && popup.isOpen()) {
+                    popup.remove();
+                }
+            }, delay + animationConfig.pulseDuration);
 
             sequenceTimeouts.push(timeout1);
             sequenceTimeouts.push(timeout2);
-            delay += delayBetweenPulses;
+            delay += animationConfig.delayBetweenPulses;
         });
 
         // After the entire sequence is over, remove the general 'highlighted'
@@ -273,6 +298,7 @@ async function initializeMap() {
                 const layerId = `route-arrows-${buttonInfo.geojson}`;
                 if (map.getLayer(layerId)) { map.removeLayer(layerId); }
             }
+            isAnimating = false;
         }, totalDuration);
         sequenceTimeouts.push(finalCleanup);
     }
@@ -280,18 +306,16 @@ async function initializeMap() {
     function calculateDrawingDuration(routeNumber) {
         const markers = document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`);
         if (markers.length === 0) return 0;
-        const delayBetweenPulses = 1000;
         // Duration should cover up to the start of the last marker's pulse
-        return 250 + (markers.length - 1) * delayBetweenPulses;
+        return animationConfig.initialDelay + (markers.length - 1) * animationConfig.delayBetweenPulses;
     }
 
     function calculateTotalDuration(routeNumber) {
         const markers = document.querySelectorAll(`.journey-${routeNumber}.typewriter-marker`);
         if (markers.length === 0) return 0;
         const drawingDuration = calculateDrawingDuration(routeNumber);
-        const pulseDuration = 1000;
         // Total duration covers the end of the last marker's pulse
-        return drawingDuration + pulseDuration;
+        return drawingDuration + animationConfig.pulseDuration;
     }
 
     function animateRouteDrawing(sourceId, duration) {
@@ -355,6 +379,7 @@ async function initializeMap() {
         const element = document.getElementById(button.id);
         if (element) {
             element.addEventListener('click', () => {
+                isAnimating = true;
                 // 1. Clear previous animations and timeouts
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
