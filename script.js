@@ -122,9 +122,9 @@ async function initializeMap() {
         }
 
         // Load gold texture
-        const baseGoldImage = await new Promise((resolve, reject) => map.loadImage('gold11.jpg', (e, i) => e ? reject(e) : resolve(i)));
+        const baseGoldImage = await new Promise((resolve, reject) => map.loadImage('gold14.jpg', (e, i) => e ? reject(e) : resolve(i)));
         if (!map.hasImage('gilding-texture-pattern')) {
-            map.addImage('gilding-texture-pattern', baseGoldImage, { pixelRatio: 3 });
+            map.addImage('gilding-texture-pattern', baseGoldImage, { pixelRatio: 8 });
         }
 
         // Set the map's background to gold. This ensures all non-water areas are gold by default.
@@ -146,13 +146,13 @@ async function initializeMap() {
         // These layers provide additional detail and shimmer on top of the base gold background.
         map.addLayer({
             'id': 'gilding-texture-overlay', 'type': 'fill', 'source': 'composite', 'source-layer': 'landcover',
-            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.15 }
+            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.25 }
         }, 'road');
 
         map.addLayer({
             'id': 'gilding-texture-overlay-landuse',
             'type': 'fill', 'source': 'composite', 'source-layer': 'landuse',
-            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.15 }
+            'paint': { 'fill-pattern': 'gilding-texture-pattern', 'fill-opacity': 0.25 }
         }, 'road');
         
         // Animated shimmer layers (kept as is, as per user's request not to change shimmer)
@@ -387,6 +387,15 @@ async function initializeMap() {
                 }
                 sequenceTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
                 sequenceTimeouts = [];
+
+                // Close any currently open popups from previous sequences
+                for (const journeyId in journeyPopups) {
+                    journeyPopups[journeyId].forEach(popup => {
+                        if (popup.isOpen()) {
+                            popup.remove();
+                        }
+                    });
+                }
                 const routeNumber = parseInt(button.id.split('-')[1]);
 
                 // 2. Reset all routes and markers to their default state
